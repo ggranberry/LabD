@@ -7,4 +7,4 @@ bench() -> {Time, _} = timer:tc(naive, run, []),
 
 run() ->
   crawl:crawl("http://www.chalmers.se/",3),
-  page_rank:page_rank().
+  page_rank:page_rank_par().

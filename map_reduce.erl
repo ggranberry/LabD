@@ -39,19 +39,29 @@ group(K,Vs,Rest) ->
 map_reduce_par(Map,M,Reduce,R,Input) ->
     Parent = self(),
     Splits = split_into(M,Input),
+    DupNodes = generate_node_list(Splits, nodes()),
     Mappers = 
-	[spawn_mapper(Parent,Map,R,Split)
-	 || Split <- Splits],
+	[spawn_mapper(Parent,Map,R,Split, Node)
+	 || Split <- Splits, Node <- DupNodes],
     Mappeds = 
 	[receive {Pid,L} -> L end || Pid <- Mappers],
     io:format("Map phase complete\n"),
     Reducers = 
-	[spawn_reducer(Parent,Reduce,I,Mappeds) 
-	 || I <- lists:seq(0,R-1)],
+	[spawn_reducer(Parent,Reduce,I,Mappeds, Node) 
+	 || I <- lists:seq(0,R-1), Node <- DupNodes],
     Reduceds = 
 	[receive {Pid,L} -> L end || Pid <- Reducers],
     io:format("Reduce phase complete\n"),
     lists:sort(lists:flatten(Reduceds)).
+
+spawn_mapper(Parent, Map, R, Split, Node) ->
+    spawn_link(Node, fun() ->
+            Mapped = [{erlang:phash2(K2, R), {K2, V2}}
+                  || {K, V} <- Split,
+                     {K2, V2} <- Map(K, V)],
+            io:format("."),
+            Parent ! {self(), group(lists:sort(Mapped))}
+        end).
 
 spawn_mapper(Parent,Map,R,Split) ->
     spawn_link(fun() ->
@@ -80,4 +90,27 @@ spawn_reducer(Parent,Reduce,I,Mappeds) ->
     spawn_link(fun() -> Result = reduce_seq(Reduce,Inputs),
                         io:format("."),
                         Parent ! {self(),Result} end).
+
+spawn_reducer(Parent,Reduce,I,Mappeds, Node) ->
+    Inputs = [KV
+	      || Mapped <- Mappeds,
+		 {J,KVs} <- Mapped,
+		 I==J,
+		 KV <- KVs],
+    spawn_link(Node, fun() -> Result = reduce_seq(Reduce,Inputs),
+                        io:format("."),
+                        Parent ! {self(),Result} end).
+
+generate_node_list(Splits, Nodes) ->
+    LNodes = length(Nodes),
+    LSplits = length(Splits),
+    Factor = round_up_division(LSplits, LNodes),
+    lists:flatten(lists:duplicate(Factor, Nodes)).
+
+round_up_division(Numerator, Denominator) ->
+    case Numerator rem Denominator of
+        0 -> Numerator div Denominator;
+        _ -> trunc(Numerator / Denominator) + 1
+    end.
+
 
