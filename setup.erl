@@ -2,12 +2,12 @@
 -export([run/0]).
 
 run() ->
-    compile_files(),
+    Files = ["page_rank", "crawl", "map_reduce"],
+    compile_files(Files),
     ping_nodes().
+    
 
-compile_files() ->
-    %% Here you can specify the list of your files to be compiled
-    Files = ["naive", "crawl", "map_reduce"],
+compile_files(Files) ->
     [compile(File) || File <- Files].
 
 compile(File) ->
@@ -20,7 +20,7 @@ compile(File) ->
 
 ping_nodes() ->
     %% Here you can specify the list of your nodes
-    Nodes = ['gn1@localhost', 'gn2@localhost', 'gn3@localhost'],
+    Nodes = ['gn1@localhost', 'gn2@localhost', 'gn3@localhost', 'gn4@localhost', 'gn5@localhost'],
     [ping(Node) || Node <- Nodes].
 
 ping(Node) ->
