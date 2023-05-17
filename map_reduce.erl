@@ -62,6 +62,7 @@ spawn_mapper(Parent,Map,R,Split) ->
 			Parent ! {self(),group(lists:sort(Mapped))}
 		end).
 
+
 split_into(N,L) ->
     split_into(N,L,length(L)).
 
