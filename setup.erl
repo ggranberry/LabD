@@ -2,7 +2,7 @@
 -export([run/0]).
 
 run() ->
-    Files = ["page_rank", "crawl", "map_reduce", "map_reduce_pool", "map_reduce_distributed"],
+    Files = ["page_rank", "crawl", "map_reduce", "map_reduce_pool", "map_reduce_distributed", map_reduce_fault],
     compile_files(Files),
     ping_nodes().
     
